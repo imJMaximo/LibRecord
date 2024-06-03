@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:divider="@drawable/calendardesign"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <DatePicker
+        android:id="@+id/datePicker"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/dirtywhite"
+        android:backgroundTint="@color/dirtywhite"
+        android:calendarTextColor="#3F51B5"
+        android:calendarViewShown="true"
+        android:dayOfWeekTextAppearance="@style/TextAppearance.AppCompat.Body1"
+        android:headerBackground="@drawable/calendarheader"
+        android:yearListItemTextAppearance="@style/TextAppearance.AppCompat.Large"
+        android:yearListSelectorColor="@color/white" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="end"
+        android:orientation="horizontal"
+        android:paddingTop="8dp">
+
+        <Button
+            android:id="@+id/confirmButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:backgroundTint="#FFC107"
+            android:text="Confirm"
+            android:textColor="#3F51B5"
+            app:iconTint="@color/white"
+            app:rippleColor="@color/white"
+            app:strokeColor="@color/blue" />
+
+        <Button
+            android:id="@+id/cancelButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="Cancel" />
+    </LinearLayout>
+</LinearLayout>

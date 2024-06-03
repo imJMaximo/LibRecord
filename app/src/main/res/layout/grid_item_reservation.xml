@@ -1,0 +1,59 @@
+<!-- res/layout/grid_item_reservation.xml -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal"
+    android:weightSum="4"
+    android:padding="8dp">
+    <TextView
+        android:visibility="gone"
+        android:layout_weight="1"
+        android:id="@+id/text_position"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="14sp"
+        android:textColor="#000" />
+
+    <TextView
+        android:visibility="gone"
+        android:layout_weight="1"
+        android:id="@+id/text_view_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="14sp"
+        android:textColor="#000" />
+
+    <TextView
+        android:text="asd"
+        android:layout_weight="1"
+        android:id="@+id/text_view_details"
+        android:layout_width="150dp"
+        android:layout_height="wrap_content"
+        android:textSize="14sp"
+        android:textColor="#666" />
+    <TextView
+        android:text="asd"
+        android:layout_weight="1"
+        android:id="@+id/text_view_reserve"
+        android:layout_width="120dp"
+        android:layout_height="wrap_content"
+        android:textSize="14sp"
+        android:textColor="#666" />
+    <TextView
+        android:text="asd"
+        android:layout_weight="1"
+        android:id="@+id/text_view_return"
+        android:layout_width="120dp"
+        android:layout_height="wrap_content"
+        android:textSize="14sp"
+        android:textColor="#666" />
+    <TextView
+        android:text="asd"
+        android:layout_weight="1"
+        android:id="@+id/text_view_status"
+        android:layout_width="120dp"
+        android:layout_height="wrap_content"
+        android:textSize="14sp"
+        android:textColor="#666" />
+
+</LinearLayout>

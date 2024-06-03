@@ -1,0 +1,21 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+    <style name="Base.Theme.LibRecord" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Customize your light theme here. -->
+        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <item name="android:statusBarColor">@color/yellow</item>
+        <item name="colorPrimary">@color/blue</item>
+        <item name="colorPrimaryVariant">@color/white</item>
+        <item name="android:windowTranslucentStatus">true</item>
+    </style>
+
+    <style name="Theme.LibRecord" parent="Base.Theme.LibRecord" />
+
+    <style name="my_dialog_theme" parent="Theme.AppCompat.Light.Dialog">
+        <item name="colorAccent">@color/yellow</item>                   <!--header background-->
+        <item name="android:windowBackground">@drawable/calendardesign</item>     <!--calendar background-->
+        <item name="android:colorControlActivated">@color/yellow</item> <!--selected day-->
+        <item name="android:textColorPrimary">@color/blue</item> <!--days of the month-->
+        <item name="android:textColorSecondary">@color/blue</item>    <!--days of the week-->
+    </style>
+</resources>

@@ -1,0 +1,235 @@
+Index: app/src/main/java/com/example/librecord/InfoActivity.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.example.librecord;\r\n\r\nimport androidx.appcompat.app.AppCompatActivity;\r\nimport androidx.fragment.app.FragmentManager;\r\nimport androidx.fragment.app.FragmentTransaction;\r\n\r\nimport android.app.DatePickerDialog;\r\nimport android.app.Dialog;\r\nimport android.content.Intent;\r\nimport android.content.SharedPreferences;\r\nimport android.os.Bundle;\r\nimport android.util.Log;\r\nimport android.view.View;\r\nimport android.widget.*;\r\n\r\nimport java.sql.Connection;\r\nimport java.sql.PreparedStatement;\r\nimport java.sql.ResultSet;\r\nimport java.sql.SQLException;\r\nimport java.util.Calendar;\r\nimport java.util.concurrent.ExecutorService;\r\nimport java.util.concurrent.Executors;\r\n\r\npublic class InfoActivity extends AppCompatActivity {\r\n    TextView title, author, year, category, publisher, isbn, language;\r\n    ImageView book;\r\n    Button reserve;\r\n    ImageButton bookmarkButton;\r\n    private String user_id;\r\n    DatePickerDialog datePickerDialog;\r\n    Calendar calendar;\r\n    Connect connection;\r\n    Connection conn;\r\n    String username;\r\n    private String userId,name,email;\r\n\r\n    @Override\r\n    protected void onCreate(Bundle savedInstanceState) {\r\n        super.onCreate(savedInstanceState);\r\n        setContentView(R.layout.activity_info);\r\n        connection = new Connect();\r\n\r\n\r\n        SharedPreferences sharedPreferences = getSharedPreferences(\"userDetails\", MODE_PRIVATE);\r\n        userId = sharedPreferences.getString(\"userId\", \"\");\r\n        email = sharedPreferences.getString(\"email\", \"\");\r\n        name = sharedPreferences.getString(\"name\", \"\");\r\n\r\n\r\n        user_id = userId;\r\n\r\n        book = findViewById(R.id.bookimage);\r\n        title = findViewById(R.id.title);\r\n        author = findViewById(R.id.author);\r\n        year = findViewById(R.id.year);\r\n        category = findViewById(R.id.category);\r\n        publisher = findViewById(R.id.publisher);\r\n        isbn = findViewById(R.id.isbn);\r\n        language = findViewById(R.id.language);\r\n        reserve = findViewById(R.id.reserve);\r\n        bookmarkButton = findViewById(R.id.bookmark);\r\n\r\n        int[] bookImages = {\r\n                R.drawable.histo1, R.drawable.histo2, R.drawable.prog3, R.drawable.calcu4, R.drawable.histo5,\r\n                R.drawable.histo6, R.drawable.histo7, R.drawable.histo8, R.drawable.histo9, R.drawable.histo10,\r\n                R.drawable.histo11, R.drawable.calcu12, R.drawable.calcu13, R.drawable.calcu14, R.drawable.calcu15,\r\n                R.drawable.calcu16, R.drawable.sci17, R.drawable.sci18, R.drawable.sci19, R.drawable.sci20,\r\n                R.drawable.sci22, R.drawable.prog23, R.drawable.prog24, R.drawable.prog25, R.drawable.prog26,\r\n                R.drawable.prog27\r\n        };\r\n\r\n        Intent intent = getIntent();\r\n\r\n        book.setImageResource(bookImages[intent.getIntExtra(\"id\", 0)]);\r\n\r\n        String bookTitle = intent.getStringExtra(\"bookTitle\");\r\n        Log.d(\"InfoActivitiy\",\"bookTitle  \"+bookTitle);\r\n\r\n// Query database for author name based on book title\r\n        ExecutorService executorService1 = Executors.newSingleThreadExecutor();\r\n        executorService1.execute(() -> {\r\n            String query = \"SELECT * FROM books WHERE BookName = ?\";\r\n            try (Connection conn = Connect.CONN();\r\n                 PreparedStatement preparedStatement = conn.prepareStatement(query)) {\r\n\r\n                if (bookTitle == null) {\r\n                    Log.e(\"InfoActivity\", \"Book title is null\");\r\n                    return;\r\n                }\r\n\r\n                preparedStatement.setString(1, bookTitle);\r\n                try (ResultSet rs = preparedStatement.executeQuery()) {\r\n                    if (rs.next()) {\r\n                        // Extract data from ResultSet\r\n                        String rsbookName = rs.getString(\"BookName\");\r\n                        String rsauthorName = rs.getString(\"AuthorName\");\r\n                        String rsyear = rs.getString(\"Year\");\r\n                        String rscategory = rs.getString(\"Category\");\r\n                        String rspublisher = rs.getString(\"Publisher\");\r\n                        String rsisbn = rs.getString(\"ISBN\");\r\n                        String rslanguage = rs.getString(\"Language\");\r\n\r\n                        Log.d(\"InfoActivity\", \"Author: \" + rsauthorName);\r\n\r\n                        // Update UI on the main thread\r\n                        runOnUiThread(() -> {\r\n                            title.setText(rsbookName);\r\n                            author.setText(rsauthorName);\r\n                            year.setText(rsyear);\r\n                            category.setText(rscategory);\r\n                            publisher.setText(rspublisher);\r\n                            isbn.setText(rsisbn);\r\n                            language.setText(rslanguage);\r\n                        });\r\n                    }\r\n                }\r\n            } catch (SQLException e) {\r\n                Log.e(\"InfoActivity\", \"Database error: \", e);\r\n            } finally {\r\n                executorService1.shutdown();\r\n            }\r\n        });\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n        ExecutorService executorService = Executors.newSingleThreadExecutor();\r\n\r\n        executorService.execute(() -> {\r\n            try {\r\n                conn = connection.CONN();\r\n                String query = \"SELECT * FROM accountdata WHERE id = \" + user_id;\r\n                PreparedStatement preparedStatement = conn.prepareStatement(query);\r\n                ResultSet rs = preparedStatement.executeQuery();\r\n\r\n                if (rs.next()) {\r\n                    username = rs.getString(\"username\");\r\n                }\r\n            } catch (SQLException e) {\r\n                e.printStackTrace();\r\n            }\r\n        });\r\n        Log.d(\"InfoActivitiy\",\"username  \"+username);\r\n\r\n\r\n\r\n        reserve.setOnClickListener(new View.OnClickListener() {\r\n            @Override\r\n            public void onClick(View v) {\r\n                showCustomDatePickerDialog(intent);\r\n            }\r\n        });\r\n\r\n        bookmarkButton.setOnClickListener(this::onBookmarkClick);\r\n\r\n\r\n        bookmarkButton.setOnClickListener(this::onBookmarkClick);\r\n    }\r\n\r\n\r\n    private void showCustomDatePickerDialog(Intent intent) {\r\n        Dialog dialog = new Dialog(this);\r\n        dialog.setContentView(R.layout.dialog_date_picker);\r\n\r\n        DatePicker datePicker = dialog.findViewById(R.id.datePicker);\r\n        Button confirmButton = dialog.findViewById(R.id.confirmButton);\r\n        Button cancelButton = dialog.findViewById(R.id.cancelButton);\r\n\r\n        confirmButton.setOnClickListener(v -> {\r\n            int day = datePicker.getDayOfMonth();\r\n            int month = datePicker.getMonth();\r\n            int year = datePicker.getYear();\r\n            Log.d(\"Resource: \", \"\" + user_id);\r\n\r\n            try {\r\n                Thread.sleep(3000);\r\n                Toast.makeText(InfoActivity.this, \"Please Wait\", Toast.LENGTH_SHORT).show();\r\n            } catch (Exception e) {\r\n                e.printStackTrace();\r\n            }\r\n            String bookTitle = title.getText().toString();\r\n\r\n            processReservation(username, bookTitle, year, month, day);\r\n            Intent reserveActivity = new Intent(InfoActivity.this, ReservationCompleteActivity.class);\r\n            startActivity(reserveActivity);\r\n            dialog.dismiss();\r\n        });\r\n\r\n        cancelButton.setOnClickListener(v -> dialog.dismiss());\r\n\r\n        dialog.show();\r\n    }\r\n\r\n\r\n\r\n    public void processReservation(String name, String bookTitle, int year, int month, int day) {\r\n        String date = day + \",\" + month + \",\" + year;\r\n        ExecutorService executorService = Executors.newSingleThreadExecutor();\r\n        executorService.execute(() -> {\r\n            try {\r\n                conn = connection.CONN();\r\n                String query = \"INSERT INTO ReservationRecord (username, title, date) VALUES (\\\"\" +\r\n                        name + \"\\\", \\\"\" + bookTitle + \"\\\", STR_TO_DATE(\\\"\" + date + \"\\\",\\\"%d,%m,%Y\\\"))\";\r\n                Log.d(\"Connection Error\", query);\r\n                PreparedStatement preparedStatement = conn.prepareStatement(query);\r\n                preparedStatement.execute();\r\n            } catch (SQLException e) {\r\n                Log.d(\"Connection Error\", \"error\");\r\n            }\r\n        });\r\n    }\r\n\r\n    public void onBookmarkClick(View view) {\r\n        saveBookmark();\r\n        openBookmarkFragment();\r\n    }\r\n\r\n    private void saveBookmark() {\r\n        String bookTitle = title.getText().toString();\r\n        ExecutorService executorService = Executors.newSingleThreadExecutor();\r\n        executorService.execute(() -> {\r\n            try {\r\n                MySQLHelperBookmark.addBookmark(user_id, bookTitle,name);\r\n                runOnUiThread(() -> Toast.makeText(InfoActivity.this, \"Bookmark Saved\", Toast.LENGTH_SHORT).show());\r\n            } catch (SQLException e) {\r\n                e.printStackTrace();\r\n                runOnUiThread(() -> Toast.makeText(InfoActivity.this, \"Error Saving Bookmark\", Toast.LENGTH_SHORT).show());\r\n            }\r\n        });\r\n    }\r\n\r\n    private void openBookmarkFragment() {\r\n\r\n        BookmarkFragment fragment = new BookmarkFragment();\r\n        FragmentManager fragmentManager = getSupportFragmentManager(); // Or getFragmentManager() if not using support library\r\n        FragmentTransaction transaction = fragmentManager.beginTransaction();\r\n        transaction.replace(R.id.activityInfo, fragment); // R.id.fragment_container is the ID of the layout container where the fragment should be placed\r\n        transaction.addToBackStack(null); // Optional, adds the transaction to the back stack\r\n        transaction.commit();\r\n\r\n    }\r\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/librecord/InfoActivity.java b/app/src/main/java/com/example/librecord/InfoActivity.java
+--- a/app/src/main/java/com/example/librecord/InfoActivity.java	(revision c6c85bc1002e600b065451fd9262d8325b5dcb8c)
++++ b/app/src/main/java/com/example/librecord/InfoActivity.java	(date 1717336387637)
+@@ -79,49 +79,27 @@
+ // Query database for author name based on book title
+         ExecutorService executorService1 = Executors.newSingleThreadExecutor();
+         executorService1.execute(() -> {
+-            String query = "SELECT * FROM books WHERE BookName = ?";
+-            try (Connection conn = Connect.CONN();
+-                 PreparedStatement preparedStatement = conn.prepareStatement(query)) {
+-
+-                if (bookTitle == null) {
+-                    Log.e("InfoActivity", "Book title is null");
+-                    return;
+-                }
+-
++            try (Connection conn = Connect.CONN()) {
++                String query = "SELECT * FROM books WHERE BookName = ?";
++                PreparedStatement preparedStatement = conn.prepareStatement(query);
+                 preparedStatement.setString(1, bookTitle);
+-                try (ResultSet rs = preparedStatement.executeQuery()) {
+-                    if (rs.next()) {
+-                        // Extract data from ResultSet
+-                        String rsbookName = rs.getString("BookName");
+-                        String rsauthorName = rs.getString("AuthorName");
+-                        String rsyear = rs.getString("Year");
+-                        String rscategory = rs.getString("Category");
+-                        String rspublisher = rs.getString("Publisher");
+-                        String rsisbn = rs.getString("ISBN");
+-                        String rslanguage = rs.getString("Language");
+-
+-                        Log.d("InfoActivity", "Author: " + rsauthorName);
+-
+-                        // Update UI on the main thread
+-                        runOnUiThread(() -> {
+-                            title.setText(rsbookName);
+-                            author.setText(rsauthorName);
+-                            year.setText(rsyear);
+-                            category.setText(rscategory);
+-                            publisher.setText(rspublisher);
+-                            isbn.setText(rsisbn);
+-                            language.setText(rslanguage);
+-                        });
+-                    }
++                ResultSet rs = preparedStatement.executeQuery();
++
++                if (rs.next()) {
++                    String authorName = rs.getString("AuthorName");
++                    Log.d("InfoActivity", "Author: " + authorName);
++                    title.setText(rs.getString("BookName"));
++                    author.setText(rs.getString("AuthorName"));
++                    year.setText(rs.getString("Year"));
++                    category.setText(rs.getString("Category"));
++                    publisher.setText(rs.getString("Publisher"));
++                    isbn.setText(rs.getString("ISBN"));
++                    language.setText(rs.getString("Language"));
+                 }
+             } catch (SQLException e) {
+-                Log.e("InfoActivity", "Database error: ", e);
+-            } finally {
+-                executorService1.shutdown();
++                e.printStackTrace();
+             }
+         });
+-
+-
+ 
+ 
+ 
+@@ -203,7 +181,7 @@
+         executorService.execute(() -> {
+             try {
+                 conn = connection.CONN();
+-                String query = "INSERT INTO ReservationRecord (username, title, date) VALUES (\"" +
++                String query = "INSERT INTO reservationrecord (username, title, date) VALUES (\"" +
+                         name + "\", \"" + bookTitle + "\", STR_TO_DATE(\"" + date + "\",\"%d,%m,%Y\"))";
+                 Log.d("Connection Error", query);
+                 PreparedStatement preparedStatement = conn.prepareStatement(query);
+@@ -235,12 +213,12 @@
+ 
+     private void openBookmarkFragment() {
+ 
+-        BookmarkFragment fragment = new BookmarkFragment();
+-        FragmentManager fragmentManager = getSupportFragmentManager(); // Or getFragmentManager() if not using support library
+-        FragmentTransaction transaction = fragmentManager.beginTransaction();
+-        transaction.replace(R.id.activityInfo, fragment); // R.id.fragment_container is the ID of the layout container where the fragment should be placed
+-        transaction.addToBackStack(null); // Optional, adds the transaction to the back stack
+-        transaction.commit();
++            BookmarkFragment fragment = new BookmarkFragment();
++            FragmentManager fragmentManager = getSupportFragmentManager(); // Or getFragmentManager() if not using support library
++            FragmentTransaction transaction = fragmentManager.beginTransaction();
++            transaction.replace(R.id.activityInfo, fragment); // R.id.fragment_container is the ID of the layout container where the fragment should be placed
++            transaction.addToBackStack(null); // Optional, adds the transaction to the back stack
++            transaction.commit();
+ 
+     }
+ }
+\ No newline at end of file
+Index: .idea/gradle.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<project version=\"4\">\r\n  <component name=\"GradleSettings\">\r\n    <option name=\"linkedExternalProjectsSettings\">\r\n      <GradleProjectSettings>\r\n        <option name=\"testRunner\" value=\"GRADLE\" />\r\n        <option name=\"distributionType\" value=\"DEFAULT_WRAPPED\" />\r\n        <option name=\"externalProjectPath\" value=\"$PROJECT_DIR$\" />\r\n        <option name=\"gradleJvm\" value=\"#JAVA_HOME\" />\r\n        <option name=\"modules\">\r\n          <set>\r\n            <option value=\"$PROJECT_DIR$\" />\r\n            <option value=\"$PROJECT_DIR$/app\" />\r\n          </set>\r\n        </option>\r\n      </GradleProjectSettings>\r\n    </option>\r\n  </component>\r\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/gradle.xml b/.idea/gradle.xml
+--- a/.idea/gradle.xml	(revision c6c85bc1002e600b065451fd9262d8325b5dcb8c)
++++ b/.idea/gradle.xml	(date 1717335730216)
+@@ -1,18 +1,18 @@
+ <?xml version="1.0" encoding="UTF-8"?>
+ <project version="4">
++  <component name="GradleMigrationSettings" migrationVersion="1" />
+   <component name="GradleSettings">
+     <option name="linkedExternalProjectsSettings">
+       <GradleProjectSettings>
+-        <option name="testRunner" value="GRADLE" />
+-        <option name="distributionType" value="DEFAULT_WRAPPED" />
+         <option name="externalProjectPath" value="$PROJECT_DIR$" />
+-        <option name="gradleJvm" value="#JAVA_HOME" />
++        <option name="gradleJvm" value="#GRADLE_LOCAL_JAVA_HOME" />
+         <option name="modules">
+           <set>
+             <option value="$PROJECT_DIR$" />
+             <option value="$PROJECT_DIR$/app" />
+           </set>
+         </option>
++        <option name="resolveExternalAnnotations" value="false" />
+       </GradleProjectSettings>
+     </option>
+   </component>
+Index: app/src/main/java/com/example/librecord/Connect.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.example.librecord;\r\n\r\nimport java.sql.Connection;\r\nimport java.sql.DriverManager;\r\nimport android.util.*;\r\n\r\npublic class Connect {\r\n    protected static String dbname = \"librecord\";\r\n    protected static String ip = \"10.0.2.2\";\r\n    protected static String port = \"3306\";\r\n    protected static String username = \"root\";\r\n//    protected static String password = \"AdminUser1\";\r\n    protected static String password = \"\";\r\n\r\n    public static Connection CONN(){\r\n        Connection conn = null;\r\n        try {\r\n            Class.forName(\"com.mysql.jdbc.Driver\");\r\n            String connString = \"jdbc:mysql://\"+ip+\":\"+port+\"/\"+dbname+\"?useSSL=false\";\r\n            conn = DriverManager.getConnection(connString, username, password);\r\n        } catch (Exception e){\r\n            e.printStackTrace();\r\n            Log.d(\"Error\", e+\"\");\r\n        }\r\n\r\n        return conn;\r\n    }\r\n}\r\n\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/librecord/Connect.java b/app/src/main/java/com/example/librecord/Connect.java
+--- a/app/src/main/java/com/example/librecord/Connect.java	(revision c6c85bc1002e600b065451fd9262d8325b5dcb8c)
++++ b/app/src/main/java/com/example/librecord/Connect.java	(date 1717335730062)
+@@ -9,8 +9,8 @@
+     protected static String ip = "10.0.2.2";
+     protected static String port = "3306";
+     protected static String username = "root";
+-//    protected static String password = "AdminUser1";
+-    protected static String password = "";
++    protected static String password = "AdminUser1";
++//    protected static String password = "";
+ 
+     public static Connection CONN(){
+         Connection conn = null;
+Index: .idea/deploymentTargetSelector.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/deploymentTargetSelector.xml b/.idea/deploymentTargetSelector.xml
+new file mode 100644
+--- /dev/null	(date 1717335730235)
++++ b/.idea/deploymentTargetSelector.xml	(date 1717335730235)
+@@ -0,0 +1,10 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<project version="4">
++  <component name="deploymentTargetSelector">
++    <selectionStates>
++      <SelectionState runConfigName="app">
++        <option name="selectionMode" value="DROPDOWN" />
++      </SelectionState>
++    </selectionStates>
++  </component>
++</project>
+\ No newline at end of file
+Index: .idea/vcs.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/vcs.xml b/.idea/vcs.xml
+new file mode 100644
+--- /dev/null	(date 1717335730226)
++++ b/.idea/vcs.xml	(date 1717335730226)
+@@ -0,0 +1,6 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<project version="4">
++  <component name="VcsDirectoryMappings">
++    <mapping directory="" vcs="Git" />
++  </component>
++</project>
+\ No newline at end of file
+Index: .idea/misc.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<project version=\"4\">\r\n  <component name=\"ExternalStorageConfigurationManager\" enabled=\"true\" />\r\n  <component name=\"ProjectRootManager\" version=\"2\" languageLevel=\"JDK_17\" default=\"true\" project-jdk-name=\"temurin-17\" project-jdk-type=\"JavaSDK\" />\r\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/misc.xml b/.idea/misc.xml
+--- a/.idea/misc.xml	(revision c6c85bc1002e600b065451fd9262d8325b5dcb8c)
++++ b/.idea/misc.xml	(date 1717335730247)
+@@ -1,5 +1,5 @@
+ <?xml version="1.0" encoding="UTF-8"?>
+ <project version="4">
+   <component name="ExternalStorageConfigurationManager" enabled="true" />
+-  <component name="ProjectRootManager" version="2" languageLevel="JDK_17" default="true" project-jdk-name="temurin-17" project-jdk-type="JavaSDK" />
++  <component name="ProjectRootManager" version="2" languageLevel="JDK_17" default="true" project-jdk-name="jbr-17" project-jdk-type="JavaSDK" />
+ </project>
+\ No newline at end of file
+Index: .idea/migrations.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/migrations.xml b/.idea/migrations.xml
+new file mode 100644
+--- /dev/null	(date 1717335730200)
++++ b/.idea/migrations.xml	(date 1717335730200)
+@@ -0,0 +1,10 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<project version="4">
++  <component name="ProjectMigrations">
++    <option name="MigrateToGradleLocalJavaHome">
++      <set>
++        <option value="$PROJECT_DIR$" />
++      </set>
++    </option>
++  </component>
++</project>
+\ No newline at end of file
