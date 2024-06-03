@@ -79,7 +79,7 @@
 
     <GridView
         android:id="@+id/libraries"
-        android:layout_width="373dp"
+        android:layout_width="wrap_content"
         android:layout_height="418dp"
         android:numColumns="3"
         android:paddingBottom="50dp"
