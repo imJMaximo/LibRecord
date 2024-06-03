@@ -8,7 +8,6 @@ import android.app.DatePickerDialog;
 import android.app.Dialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -71,6 +70,14 @@ public class InfoActivity extends AppCompatActivity {
                 R.drawable.sci22, R.drawable.prog23, R.drawable.prog24, R.drawable.prog25, R.drawable.prog26,
                 R.drawable.prog27
         };
+
+        ImageView backButton = findViewById(R.id.info_back_btn); // Replace back_button_image with your image ID
+        backButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                onBackPressed();
+            }
+        });
 
         Intent intent = getIntent();
         book.setImageResource(bookImages[intent.getIntExtra("id", 0)]);
@@ -145,6 +152,12 @@ public class InfoActivity extends AppCompatActivity {
         });
 
         bookmarkButton.setOnClickListener(this::onBookmarkClick);
+    }
+
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        // Add any additional functionality you want when back button is pressed
     }
 
     private void showCustomDatePickerDialog(Intent intent) {
