@@ -8,6 +8,8 @@ import android.app.DatePickerDialog;
 import android.app.Dialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -62,16 +64,7 @@ public class InfoActivity extends AppCompatActivity {
         reserve = findViewById(R.id.reserve);
         bookmarkButton = findViewById(R.id.bookmark);
 
-        int[] bookImages = {
-                R.drawable.histo1, R.drawable.histo2, R.drawable.prog3, R.drawable.calcu4, R.drawable.histo5,
-                R.drawable.histo6, R.drawable.histo7, R.drawable.histo8, R.drawable.histo9, R.drawable.histo10,
-                R.drawable.histo11, R.drawable.calcu12, R.drawable.calcu13, R.drawable.calcu14, R.drawable.calcu15,
-                R.drawable.calcu16, R.drawable.sci17, R.drawable.sci18, R.drawable.sci19, R.drawable.sci20,
-                R.drawable.sci22, R.drawable.prog23, R.drawable.prog24, R.drawable.prog25, R.drawable.prog26,
-                R.drawable.prog27
-        };
-
-        ImageView backButton = findViewById(R.id.info_back_btn); // Replace back_button_image with your image ID
+        ImageView backButton = findViewById(R.id.info_back_btn);
         backButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -80,52 +73,13 @@ public class InfoActivity extends AppCompatActivity {
         });
 
         Intent intent = getIntent();
-        book.setImageResource(bookImages[intent.getIntExtra("id", 0)]);
+        int bookId = intent.getIntExtra("bookid", -1);
 
-        String bookTitle = intent.getStringExtra("bookTitle");
-        Log.d("InfoActivity", "bookTitle " + bookTitle);
-
-        ExecutorService executorService1 = Executors.newSingleThreadExecutor();
-        executorService1.execute(() -> {
-            String query = "SELECT * FROM books WHERE BookName = ?";
-            try (Connection conn = Connect.CONN();
-                 PreparedStatement preparedStatement = conn.prepareStatement(query)) {
-
-                if (bookTitle == null) {
-                    Log.e("InfoActivity", "Book title is null");
-                    return;
-                }
-
-                preparedStatement.setString(1, bookTitle);
-                try (ResultSet rs = preparedStatement.executeQuery()) {
-                    if (rs.next()) {
-                        String rsbookName = rs.getString("BookName");
-                        String rsauthorName = rs.getString("AuthorName");
-                        String rsyear = rs.getString("Year");
-                        String rscategory = rs.getString("Category");
-                        String rspublisher = rs.getString("Publisher");
-                        String rsisbn = rs.getString("ISBN");
-                        String rslanguage = rs.getString("Language");
-
-                        Log.d("InfoActivity", "Author: " + rsauthorName);
-
-                        runOnUiThread(() -> {
-                            title.setText(rsbookName);
-                            author.setText(rsauthorName);
-                            year.setText(rsyear);
-                            category.setText(rscategory);
-                            publisher.setText(rspublisher);
-                            isbn.setText(rsisbn);
-                            language.setText(rslanguage);
-                        });
-                    }
-                }
-            } catch (SQLException e) {
-                Log.e("InfoActivity", "Database error: ", e);
-            } finally {
-                executorService1.shutdown();
-            }
-        });
+        if (bookId != -1) {
+            fetchBookDetails(bookId);
+        } else {
+            Toast.makeText(this, "Book ID not found", Toast.LENGTH_SHORT).show();
+        }
 
         ExecutorService executorService = Executors.newSingleThreadExecutor();
         executorService.execute(() -> {
@@ -147,7 +101,7 @@ public class InfoActivity extends AppCompatActivity {
         reserve.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                showCustomDatePickerDialog(intent);
+                showCustomDatePickerDialog();
             }
         });
 
@@ -157,10 +111,54 @@ public class InfoActivity extends AppCompatActivity {
     @Override
     public void onBackPressed() {
         super.onBackPressed();
-        // Add any additional functionality you want when back button is pressed
     }
 
-    private void showCustomDatePickerDialog(Intent intent) {
+    private void fetchBookDetails(int bookId) {
+        ExecutorService executorService = Executors.newSingleThreadExecutor();
+        executorService.execute(() -> {
+            String query = "SELECT * FROM books WHERE bookid = ?";
+            try (Connection conn = connection.CONN();
+                 PreparedStatement preparedStatement = conn.prepareStatement(query)) {
+
+                preparedStatement.setInt(1, bookId);
+                try (ResultSet rs = preparedStatement.executeQuery()) {
+                    if (rs.next()) {
+                        String rsbookName = rs.getString("BookName");
+                        String rsauthorName = rs.getString("AuthorName");
+                        String rsyear = rs.getString("Year");
+                        String rscategory = rs.getString("Category");
+                        String rspublisher = rs.getString("Publisher");
+                        String rsisbn = rs.getString("ISBN");
+                        String rslanguage = rs.getString("Language");
+                        byte[] imageBytes = rs.getBytes("BookImages");
+
+                        runOnUiThread(() -> {
+                            title.setText(rsbookName);
+                            author.setText(rsauthorName);
+                            year.setText(rsyear);
+                            category.setText(rscategory);
+                            publisher.setText(rspublisher);
+                            isbn.setText(rsisbn);
+                            language.setText(rslanguage);
+
+                            if (imageBytes != null) {
+                                Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
+                                book.setImageBitmap(bitmap);
+                            } else {
+                                book.setImageResource(R.drawable.calcu4);
+                            }
+                        });
+                    }
+                }
+            } catch (SQLException e) {
+                Log.e("InfoActivity", "Database error: ", e);
+            } finally {
+                executorService.shutdown();
+            }
+        });
+    }
+
+    private void showCustomDatePickerDialog() {
         Dialog dialog = new Dialog(this);
         dialog.setContentView(R.layout.dialog_date_picker);
 
@@ -168,14 +166,12 @@ public class InfoActivity extends AppCompatActivity {
         Button confirmButton = dialog.findViewById(R.id.confirmButton);
         Button cancelButton = dialog.findViewById(R.id.cancelButton);
 
-        // Customize calendar
         datePickerDialog = new DatePickerDialog(this, (view, year, monthOfYear, dayOfMonth) -> { },
                 Calendar.getInstance().get(Calendar.YEAR),
                 Calendar.getInstance().get(Calendar.MONTH),
                 Calendar.getInstance().get(Calendar.DAY_OF_MONTH));
-        datePickerDialog.getDatePicker().setMinDate(System.currentTimeMillis() - 1000); // Disable past dates
+        datePickerDialog.getDatePicker().setMinDate(System.currentTimeMillis() - 1000);
 
-        // Set date limits and mark reserved dates
         Calendar c = Calendar.getInstance();
         long minDate = c.getTimeInMillis();
         c.add(Calendar.YEAR, 1);
@@ -259,7 +255,7 @@ public class InfoActivity extends AppCompatActivity {
     }
 
     public boolean checkDateReservation(String title, int year, int month, int day) {
-        String date = String.format("%04d-%02d-%02d", year, month + 1, day); // Month is 0-based in DatePicker
+        String date = String.format("%04d-%02d-%02d", year, month + 1, day);
 
         ExecutorService executorService = Executors.newSingleThreadExecutor();
         Future<Boolean> future = executorService.submit(() -> {
@@ -326,8 +322,8 @@ public class InfoActivity extends AppCompatActivity {
     }
 
     public void processReservation(String name, String bookTitle, int year, int month, int day) {
-        String date = String.format("%04d-%02d-%02d", year, month + 1, day); // Month is 0-based in DatePicker
-        String returnDate = calculateReturnDate(year, month, day); // Calculate return date
+        String date = String.format("%04d-%02d-%02d", year, month + 1, day);
+        String returnDate = calculateReturnDate(year, month, day);
 
         ExecutorService executorService = Executors.newSingleThreadExecutor();
         executorService.execute(() -> {
@@ -353,12 +349,10 @@ public class InfoActivity extends AppCompatActivity {
     private String calculateReturnDate(int year, int month, int day) {
         Calendar calendar = Calendar.getInstance();
         calendar.set(year, month, day);
-        calendar.add(Calendar.DAY_OF_MONTH, 3); // Add 3 days for return
+        calendar.add(Calendar.DAY_OF_MONTH, 3);
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
         return sdf.format(calendar.getTime());
     }
-
-
 
     public void onBookmarkClick(View view) {
         saveBookmark();

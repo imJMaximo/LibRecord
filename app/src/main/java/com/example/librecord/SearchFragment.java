@@ -14,12 +14,25 @@ import android.widget.GridView;
 import android.widget.ImageButton;
 import android.widget.Toast;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 public class SearchFragment extends Fragment {
 
-    View view;
-    ImageButton profileButton1;
-    EditText searchBar;
-    ImageButton search;
+    private View view;
+    private ImageButton profileButton1;
+    private EditText searchBar;
+    private ImageButton search;
+    private GridAdapter gridAdapter;
+    private List<Book> books;
+    private ExecutorService executorService;
+    private Connect connection;
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -29,61 +42,74 @@ public class SearchFragment extends Fragment {
         searchBar = view.findViewById(R.id.searchBar);
         search = view.findViewById(R.id.search);
 
-        profileButton1 = (ImageButton) view.findViewById(R.id.search_profileButton);
-        profileButton1.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                DrawerLayout drawerLayout = view.getRootView().findViewById(R.id.drawerLayout);
-
-                drawerLayout.openDrawer(GravityCompat.START);
-            }
+        profileButton1 = view.findViewById(R.id.search_profileButton);
+        profileButton1.setOnClickListener(v -> {
+            DrawerLayout drawerLayout = view.getRootView().findViewById(R.id.drawerLayout);
+            drawerLayout.openDrawer(GravityCompat.START);
         });
 
-        int[] bookImages = {
-                R.drawable.histo1, R.drawable.histo2, R.drawable.prog3, R.drawable.calcu4, R.drawable.histo5,
-                R.drawable.histo6, R.drawable.histo7, R.drawable.histo8, R.drawable.histo9, R.drawable.histo10,
-                R.drawable.histo11, R.drawable.calcu12, R.drawable.calcu13, R.drawable.calcu14, R.drawable.calcu15,
-                R.drawable.calcu16, R.drawable.sci17, R.drawable.sci18, R.drawable.sci19, R.drawable.sci20,
-                R.drawable.sci22, R.drawable.prog23, R.drawable.prog24, R.drawable.prog25, R.drawable.prog26,
-                R.drawable.prog27
-        };
-        String[] bookTitles = {
-                "Appeasement", "Destiny Disrupted", "SamTeach Yourself HTML, CSS, and JavaScript", "Two-Dimensional Calculus", "The Communist Manifesto",
-                "The Plantagenets", "A Photohistory of World War One", "Orientalism", "Democracy", "Lies My Teacher Told Me",
-                "Guns, Germs and Steel", "A First Course in Calculus", "Advance Calculus", "Differential Calculus", "Inside Calculus",
-                "Calculus and Its Origins", "The Creation of the Universe", "Theories of the Universe", "A Brief History of Time", "Science, society, and the search for life in the universe",
-                "Cosmos", "Code: The Hidden Language of Computer Hardware and Software", "Windows Forms Programming in C#", "HTML and CSS",
-                "Learning SQL", "Python Programming: An Introduction to Computer Science"
-
-        };
-
-        String[] bookAuthors = {
-                "Tim Bouverie", "Tamim Ansary", "Julie C. Meloni", "Robert Osserman", "Karl Marx, Friedrich Engels, and David McLellan",
-                "Dan Jones", "Haythornthwaite, Philip J.", "Edward W. Said", "Paul Cartledge", "James W. Loewen",
-                "Jared Diamond", "Serge Lang", "Patrick Fitzpatrick", "S Balachandra Rao", "George R. Exner",
-                "David Perkins", "George Gamow", "Milton K. Munitz", "Stephen Hawking", "Bruce M. Jakosky",
-                "Carl Sagan", "Charles Petzold", "Chris Sells", "Jon Duckett", "Alan Beaulieu",
-                "John M. Zelle"
-
-        };
-
-        GridAdapter gridAdapter = new GridAdapter(getActivity(),bookImages, bookTitles, bookAuthors);
-        GridView gridView = (GridView) view.findViewById(R.id.libraries);
+        books = new ArrayList<>();
+        gridAdapter = new GridAdapter(getActivity(), books);
+        GridView gridView = view.findViewById(R.id.libraries);
         gridView.setAdapter(gridAdapter);
 
-        search.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String query = searchBar.getText().toString().trim(); // Get the search query
-                if (!query.isEmpty()) {
-                    gridAdapter.getFilter().filter(query); // Call the filtering method with the search query
-                } else {
-                    // If the query is empty, show the original data
-                    gridAdapter.getFilter().filter(null);
-                }
+        executorService = Executors.newSingleThreadExecutor();
+        connection = new Connect();
+
+        fetchBooksFromDatabase();
+
+        search.setOnClickListener(v -> {
+            String query = searchBar.getText().toString().trim(); // Get the search query
+            if (!query.isEmpty()) {
+                gridAdapter.getFilter().filter(query); // Call the filtering method with the search query
+            } else {
+                // If the query is empty, show the original data
+                gridAdapter.getFilter().filter(null);
             }
         });
 
         return view;
+    }
+
+    private void fetchBooksFromDatabase() {
+        executorService.execute(() -> {
+            try (Connection conn = connection.CONN()) {
+                if (conn == null) {
+                    getActivity().runOnUiThread(() -> Toast.makeText(getActivity(), "Connection is null", Toast.LENGTH_SHORT).show());
+                    return;
+                }
+
+                String query = "SELECT * FROM books";
+                try (PreparedStatement preparedStatement = conn.prepareStatement(query);
+                     ResultSet rs = preparedStatement.executeQuery()) {
+                    while (rs.next()) {
+                        Book book = new Book();
+                        book.setId(rs.getInt("bookid"));
+                        book.setTitle(rs.getString("BookName"));
+                        book.setAuthor(rs.getString("AuthorName"));
+                        book.setYear(rs.getInt("Year"));
+                        book.setCategory(rs.getString("Category"));
+                        book.setPublisher(rs.getString("Publisher"));
+                        book.setIsbn(rs.getString("ISBN"));
+                        book.setLanguage(rs.getString("Language"));
+                        book.setImage(rs.getBytes("BookImages")); // Fetch image data
+
+                        books.add(book);
+                    }
+
+                    getActivity().runOnUiThread(() -> gridAdapter.setBooks(books));
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if (executorService != null) {
+            executorService.shutdown();
+        }
     }
 }
