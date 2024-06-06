@@ -33,43 +33,7 @@ public class HomeFragment extends Fragment {
     private GridAdapter gridAdapter;
     private GridView gridView;
 
-    private static final int[] BOOK_IMAGES = {
-            R.drawable.histo1, R.drawable.histo2, R.drawable.prog3, R.drawable.calcu4, R.drawable.histo5,
-            R.drawable.histo6, R.drawable.histo7, R.drawable.histo8, R.drawable.histo9, R.drawable.histo10,
-            R.drawable.histo11, R.drawable.calcu12, R.drawable.calcu13, R.drawable.calcu14, R.drawable.calcu15,
-            R.drawable.calcu16, R.drawable.sci17, R.drawable.sci18, R.drawable.sci19, R.drawable.sci20,
-            R.drawable.sci22, R.drawable.prog23, R.drawable.prog24, R.drawable.prog25, R.drawable.prog26,
-            R.drawable.prog27
-    };
-
-    private static final String[] BOOK_TITLES = {
-            "Appeasement", "Destiny Disrupted", "SamTeach Yourself HTML, CSS, and JavaScript", "Two-Dimensional Calculus", "The Communist Manifesto",
-            "The Plantagenets", "A Photohistory of World War One", "Orientalism", "Democracy", "Lies My Teacher Told Me",
-            "Guns, Germs and Steel", "A First Course in Calculus", "Advance Calculus", "Differential Calculus", "Inside Calculus",
-            "Calculus and Its Origins", "The Creation of the Universe", "Theories of the Universe", "A Brief History of Time", "Science, society, and the search for life in the universe",
-            "Cosmos", "Code: The Hidden Language of Computer Hardware and Software", "Windows Forms Programming in C#", "HTML and CSS",
-            "Learning SQL", "Python Programming: An Introduction to Computer Science"
-    };
-
-    private static final String[] BOOK_AUTHORS = {
-            "Tim Bouverie", "Tamim Ansary", "Julie C. Meloni", "Robert Osserman", "S. Balachandra Rao and C.K. Shantha",
-            "Dan Jones", "Mike Sheil", "Edward Said", "David A. Moss", "James W. Loewen",
-            "Jared Diamond", "Serge Lang", "Richard Courant", "Shanti Narayan", "Gerald J. Janusz",
-            "Derek Holton", "Isaac Asimov", "Stephen Hawking", "John R. Gribbin", "Chris Impey",
-            "Carl Sagan", "Charles Petzold", "Chris Sells", "Jon Duckett", "Alan Beaulieu",
-            "John M. Zelle"
-    };
-
-    private static final String[] CATEGORIES = {
-            "History", "Calculus", "Programming", "Science"
-    };
-
-    private static final String[][] CATEGORY_BOOKS = {
-            {"Appeasement", "Destiny Disrupted", "The Communist Manifesto", "The Plantagenets", "A Photohistory of World War One", "Orientalism", "Democracy", "Lies My Teacher Told Me", "Guns, Germs and Steel"},
-            {"Two-Dimensional Calculus", "A First Course in Calculus", "Advance Calculus", "Differential Calculus", "Inside Calculus", "Calculus and Its Origins"},
-            {"SamTeach Yourself HTML, CSS, and JavaScript", "Code: The Hidden Language of Computer Hardware and Software", "Windows Forms Programming in C#", "HTML and CSS", "Learning SQL", "Python Programming: An Introduction to Computer Science"},
-            {"The Creation of the Universe", "Theories of the Universe", "A Brief History of Time", "Science, society, and the search for life in the universe", "Cosmos"}
-    };
+    private ArrayList<Book> books = new ArrayList<>();
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -93,28 +57,21 @@ public class HomeFragment extends Fragment {
     }
 
     private void setupGridView() {
-        gridAdapter = new GridAdapter(getActivity(), BOOK_IMAGES, BOOK_TITLES, BOOK_AUTHORS);
+        gridAdapter = new GridAdapter(getActivity(), books);
         gridView = view.findViewById(R.id.libraries);
         gridView.setAdapter(gridAdapter);
 
         gridView.setOnItemClickListener((parent, view, position, id) -> {
-
-            String bookTitle = BOOK_TITLES[position];
-            String bookAuthor = BOOK_AUTHORS[position];
-
-//            Toast.makeText(getActivity(), "test: "+position, Toast.LENGTH_SHORT).show();
+            Book selectedBook = (Book) gridAdapter.getItem(position);
             infoIntent = new Intent(getActivity(), InfoActivity.class);
-            int bookId = 16 + position; // Assuming book IDs are sequential and start from 16
-            Log.d("Book ID", String.valueOf(bookId));
-
-            getConnect("SELECT * FROM Books WHERE bookid = " + bookId);
-
-            if (getArguments() != null) {
-                infoIntent.putExtra("id", position);
-                infoIntent.putExtra("bookTitle", bookTitle);
-
-                Log.d("ID", String.valueOf(getArguments().getInt("id")));
-            }
+            infoIntent.putExtra("bookid", selectedBook.getId());
+            infoIntent.putExtra("title", selectedBook.getTitle());
+            infoIntent.putExtra("author", selectedBook.getAuthor());
+            infoIntent.putExtra("year", selectedBook.getYear());
+            infoIntent.putExtra("category", selectedBook.getCategory());
+            infoIntent.putExtra("publisher", selectedBook.getPublisher());
+            infoIntent.putExtra("isbn", selectedBook.getIsbn());
+            infoIntent.putExtra("language", selectedBook.getLanguage());
             startActivity(infoIntent);
         });
     }
@@ -125,35 +82,23 @@ public class HomeFragment extends Fragment {
         Button buttonHistory = view.findViewById(R.id.button_history);
         Button buttonScience = view.findViewById(R.id.button_science);
 
-        buttonProgramming.setOnClickListener(v -> filterBooksByCategory(2));
-        buttonCalculus.setOnClickListener(v -> filterBooksByCategory(1));
-        buttonHistory.setOnClickListener(v -> filterBooksByCategory(0));
-        buttonScience.setOnClickListener(v -> filterBooksByCategory(3));
+        buttonProgramming.setOnClickListener(v -> filterBooksByCategory("Programming"));
+        buttonCalculus.setOnClickListener(v -> filterBooksByCategory("Calculus"));
+        buttonHistory.setOnClickListener(v -> filterBooksByCategory("History"));
+        buttonScience.setOnClickListener(v -> filterBooksByCategory("Science"));
     }
 
-    private void filterBooksByCategory(int categoryIndex) {
-        String[] filteredBookTitles = CATEGORY_BOOKS[categoryIndex];
-        ArrayList<Integer> filteredBookImages = new ArrayList<>();
-        ArrayList<String> filteredBookAuthors = new ArrayList<>();
-
-        for (String title : filteredBookTitles) {
-            for (int i = 0; i < BOOK_TITLES.length; i++) {
-                if (BOOK_TITLES[i].equals(title)) {
-                    filteredBookImages.add(BOOK_IMAGES[i]);
-                    filteredBookAuthors.add(BOOK_AUTHORS[i]);
-                }
+    private void filterBooksByCategory(String category) {
+        ArrayList<Book> filteredBooks = new ArrayList<>();
+        for (Book book : books) {
+            if (book.getCategory().equalsIgnoreCase(category)) {
+                filteredBooks.add(book);
             }
         }
-
-        gridAdapter = new GridAdapter(getActivity(),
-                filteredBookImages.stream().mapToInt(i -> i).toArray(),
-                filteredBookTitles,
-                filteredBookAuthors.toArray(new String[0])
-        );
-        gridView.setAdapter(gridAdapter);
+        gridAdapter.setBooks(filteredBooks);
     }
 
-    private void getConnect(String query) {
+    private void fetchBooksFromDatabase() {
         executorService.execute(() -> {
             try (Connection conn = connection.CONN()) {
                 if (conn == null) {
@@ -161,23 +106,36 @@ public class HomeFragment extends Fragment {
                     return;
                 }
 
+                String query = "SELECT * FROM books";
                 try (PreparedStatement preparedStatement = conn.prepareStatement(query);
                      ResultSet rs = preparedStatement.executeQuery()) {
-                    if (rs.next()) {
-                        infoIntent.putExtra("title", rs.getString("bookname"));
-                        infoIntent.putExtra("author", rs.getString("authorname"));
-                        infoIntent.putExtra("year", rs.getInt("year"));
-                        infoIntent.putExtra("category", rs.getString("category"));
-                        infoIntent.putExtra("publisher", rs.getString("publisher"));
-                        infoIntent.putExtra("isbn", rs.getString("isbn"));
-                        infoIntent.putExtra("language", rs.getString("language"));
+                    while (rs.next()) {
+                        Book book = new Book();
+                        book.setId(rs.getInt("bookid"));
+                        book.setTitle(rs.getString("BookName"));
+                        book.setAuthor(rs.getString("AuthorName"));
+                        book.setYear(rs.getInt("Year"));
+                        book.setCategory(rs.getString("Category"));
+                        book.setPublisher(rs.getString("Publisher"));
+                        book.setIsbn(rs.getString("ISBN"));
+                        book.setLanguage(rs.getString("Language"));
+                        book.setImage(rs.getBytes("BookImages")); // Fetch image data
+
+                        books.add(book);
                     }
 
+                    getActivity().runOnUiThread(() -> gridAdapter.setBooks(books));
                 }
             } catch (Exception e) {
                 e.printStackTrace();
             }
         });
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        fetchBooksFromDatabase();
     }
 
     @Override

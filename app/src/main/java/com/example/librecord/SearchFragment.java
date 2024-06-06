@@ -84,7 +84,7 @@ public class SearchFragment extends Fragment {
                      ResultSet rs = preparedStatement.executeQuery()) {
                     while (rs.next()) {
                         Book book = new Book();
-                        book.setId(rs.getInt("bookid"));
+                        book.setBookId(rs.getInt("bookid"));
                         book.setTitle(rs.getString("BookName"));
                         book.setAuthor(rs.getString("AuthorName"));
                         book.setYear(rs.getInt("Year"));
