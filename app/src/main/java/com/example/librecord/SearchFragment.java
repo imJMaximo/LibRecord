@@ -1,5 +1,6 @@
 package com.example.librecord;
 
+import android.content.Intent;
 import android.os.Bundle;
 
 import androidx.core.view.GravityCompat;
@@ -32,6 +33,7 @@ public class SearchFragment extends Fragment {
     private List<Book> books;
     private ExecutorService executorService;
     private Connect connection;
+    private GridView gridView;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -50,7 +52,7 @@ public class SearchFragment extends Fragment {
 
         books = new ArrayList<>();
         gridAdapter = new GridAdapter(getActivity(), books);
-        GridView gridView = view.findViewById(R.id.libraries);
+        gridView = view.findViewById(R.id.libraries);
         gridView.setAdapter(gridAdapter);
 
         executorService = Executors.newSingleThreadExecutor();
@@ -68,7 +70,25 @@ public class SearchFragment extends Fragment {
             }
         });
 
+        setupGridViewItemClickListener();
+
         return view;
+    }
+
+    private void setupGridViewItemClickListener() {
+        gridView.setOnItemClickListener((parent, view, position, id) -> {
+            Book selectedBook = (Book) gridAdapter.getItem(position);
+            Intent infoIntent = new Intent(getActivity(), InfoActivity.class);
+            infoIntent.putExtra("bookid", selectedBook.getBookId());
+            infoIntent.putExtra("title", selectedBook.getTitle());
+            infoIntent.putExtra("author", selectedBook.getAuthor());
+            infoIntent.putExtra("year", selectedBook.getYear());
+            infoIntent.putExtra("category", selectedBook.getCategory());
+            infoIntent.putExtra("publisher", selectedBook.getPublisher());
+            infoIntent.putExtra("isbn", selectedBook.getIsbn());
+            infoIntent.putExtra("language", selectedBook.getLanguage());
+            startActivity(infoIntent);
+        });
     }
 
     private void fetchBooksFromDatabase() {
