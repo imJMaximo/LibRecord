@@ -88,6 +88,8 @@ public class HomeFragment extends Fragment {
         buttonScience.setOnClickListener(v -> filterBooksByCategory("Science"));
     }
 
+
+    //Filter Books by category and clear the existing list of filtered books before adding new ones
     private void filterBooksByCategory(String category) {
         ArrayList<Book> filteredBooks = new ArrayList<>();
         for (Book book : books) {
