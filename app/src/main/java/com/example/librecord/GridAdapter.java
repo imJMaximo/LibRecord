@@ -1,42 +1,35 @@
 package com.example.librecord;
 
 import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
-import android.widget.Filter;
-import android.widget.Filterable;
-import android.widget.ImageView;
-import android.widget.TextView;
-
+import android.widget.*;
+import java.util.*;
 import java.util.ArrayList;
 import java.util.List;
 
 public class GridAdapter extends BaseAdapter implements Filterable {
 
-    private Context context;
-    private List<Book> books;
-    private List<Book> originalData;
-    private List<Book> filteredData;
-    private LayoutInflater inflater;
+    Context context;
+    int bookImages[];
+    String bookTitle[], bookAuthor[];
+    LayoutInflater inflater;
+    List<String> originalData;
+    List<String> filteredData;
 
-    public GridAdapter(Context context, List<Book> books) {
+    public GridAdapter(Context context, int[] bookImages, String[] bookTitle, String[] bookAuthor) {
         this.context = context;
-        this.books = books;
-        this.originalData = new ArrayList<>(books);
-        this.filteredData = new ArrayList<>(books);
-        this.inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        this.bookImages = bookImages;
+        this.bookTitle = bookTitle;
+        this.bookAuthor = bookAuthor;
+        inflater = (LayoutInflater) this.context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+
+        originalData = new ArrayList<>(Arrays.asList(bookTitle));
+        filteredData = new ArrayList<>(originalData);
     }
 
-    public void setBooks(List<Book> books) {
-        this.books = books;
-        this.originalData = new ArrayList<>(books);
-        this.filteredData = new ArrayList<>(books);
-        notifyDataSetChanged();
-    }
 
     @Override
     public int getCount() {
@@ -55,10 +48,11 @@ public class GridAdapter extends BaseAdapter implements Filterable {
 
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
-        if (inflater == null) {
+
+        if (inflater == null){
             inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         }
-        if (convertView == null) {
+        if (convertView == null){
             convertView = inflater.inflate(R.layout.book_layout, null);
         }
 
@@ -66,17 +60,12 @@ public class GridAdapter extends BaseAdapter implements Filterable {
         TextView title = convertView.findViewById(R.id.booktitle);
         TextView author = convertView.findViewById(R.id.author);
 
-        Book book = filteredData.get(position);
+        String currentTitle = filteredData.get(position);
+        int originalPosition = originalData.indexOf(currentTitle);
 
-        if (book.getImage() != null) {
-            Bitmap bitmap = BitmapFactory.decodeByteArray(book.getImage(), 0, book.getImage().length);
-            imageView.setImageBitmap(bitmap);
-        } else {
-            imageView.setImageResource(R.drawable.calcu4);
-        }
-        title.setText(book.getTitle());
-        author.setText(book.getAuthor());
-
+        imageView.setImageResource(bookImages[originalPosition]);
+        title.setText(bookTitle[originalPosition]);
+        author.setText(bookAuthor[originalPosition]);
         return convertView;
     }
 
@@ -86,16 +75,15 @@ public class GridAdapter extends BaseAdapter implements Filterable {
             @Override
             protected FilterResults performFiltering(CharSequence constraint) {
                 FilterResults results = new FilterResults();
-                List<Book> filteredList = new ArrayList<>();
+                List<String> filteredList = new ArrayList<>();
 
                 if (constraint == null || constraint.length() == 0) {
                     filteredList.addAll(originalData);
                 } else {
                     String filterPattern = constraint.toString().toLowerCase().trim();
-                    for (Book book : originalData) {
-                        if (book.getTitle().toLowerCase().contains(filterPattern) ||
-                                book.getAuthor().toLowerCase().contains(filterPattern)) {
-                            filteredList.add(book);
+                    for (String item : originalData) {
+                        if (item.toLowerCase().contains(filterPattern)) {
+                            filteredList.add(item);
                         }
                     }
                 }
@@ -107,7 +95,7 @@ public class GridAdapter extends BaseAdapter implements Filterable {
             @Override
             protected void publishResults(CharSequence constraint, FilterResults results) {
                 filteredData.clear();
-                filteredData.addAll((List<Book>) results.values);
+                filteredData.addAll((List<String>) results.values);
                 notifyDataSetChanged();
             }
         };
