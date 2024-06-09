@@ -7,13 +7,16 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.widget.CheckBox;
 import android.widget.Filter;
 import android.widget.Filterable;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class GridAdapter extends BaseAdapter implements Filterable {
 
@@ -22,6 +25,8 @@ public class GridAdapter extends BaseAdapter implements Filterable {
     private List<Book> originalData;
     private List<Book> filteredData;
     private LayoutInflater inflater;
+    private boolean isEditMode = false;
+    private Set<Integer> selectedPositions = new HashSet<>();
 
     public GridAdapter(Context context, List<Book> books) {
         this.context = context;
@@ -36,6 +41,29 @@ public class GridAdapter extends BaseAdapter implements Filterable {
         this.originalData = new ArrayList<>(books);
         this.filteredData = new ArrayList<>(books);
         notifyDataSetChanged();
+    }
+
+    public void setEditMode(boolean isEditMode) {
+        this.isEditMode = isEditMode;
+        selectedPositions.clear(); // Clear selections when toggling edit mode
+        notifyDataSetChanged();
+    }
+
+    public void toggleSelection(int position) {
+        if (selectedPositions.contains(position)) {
+            selectedPositions.remove(position);
+        } else {
+            selectedPositions.add(position);
+        }
+        notifyDataSetChanged();
+    }
+
+    public List<Book> getSelectedBooks() {
+        List<Book> selectedBooks = new ArrayList<>();
+        for (Integer position : selectedPositions) {
+            selectedBooks.add(filteredData.get(position));
+        }
+        return selectedBooks;
     }
 
     @Override
@@ -65,6 +93,7 @@ public class GridAdapter extends BaseAdapter implements Filterable {
         ImageView imageView = convertView.findViewById(R.id.bookimage);
         TextView title = convertView.findViewById(R.id.booktitle);
         TextView author = convertView.findViewById(R.id.author);
+        CheckBox checkBox = convertView.findViewById(R.id.checkbox);
 
         Book book = filteredData.get(position);
 
@@ -76,6 +105,13 @@ public class GridAdapter extends BaseAdapter implements Filterable {
         }
         title.setText(book.getTitle());
         author.setText(book.getAuthor());
+
+        if (isEditMode) {
+            checkBox.setVisibility(View.VISIBLE);
+            checkBox.setChecked(selectedPositions.contains(position));
+        } else {
+            checkBox.setVisibility(View.GONE);
+        }
 
         return convertView;
     }

@@ -92,5 +92,8 @@ public class Book {
     public void setImage(byte[] image) {  // Add this setter
         this.image = image;
     }
+
+    public void setSelected(boolean b) {
+    }
 }
 
